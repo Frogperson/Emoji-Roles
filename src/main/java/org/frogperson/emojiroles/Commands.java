@@ -51,13 +51,15 @@ public class Commands extends ListenerAdapter {
                     event.getTextChannel().sendMessage("**Message is no longer a Role Message**").queue();
             }
 
-            if (msg.toLowerCase().startsWith("emojilink ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) { //link command. Syntax: !emojilink RoleName :Emoji:      Note: Roles with spaces not supported
+            if (msg.toLowerCase().startsWith("emojilink ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) { //link command. Syntax: !emojilink :Emoji: Role Name
                 if (emojis.size() == 1) {
                     emoji = emojis.get(0).getId();
                     role = getRoleIdFromName(getRoleFromMessage(msg));
-                    if (role != null) {
+                    if (role != null && jda.getEmoteById(emoji) != null) {
                         if (JsonDatabase.addEmojiRole(emoji, role))
                             event.getTextChannel().sendMessage("**Linked sucessfully**").queue();
+                    } else {
+                        event.getTextChannel().sendMessage("**Please use an emoji uploaded to this server**").queue();
                     }
                 }
             }
@@ -78,12 +80,14 @@ public class Commands extends ListenerAdapter {
         }
     }
 
-    private String getRoleFromMessage(String msg) { //magic regex stuff to get grab the role name from the message. Thanks to Benji
-
-        String regex = "^!emojilink (.+) [^ ]+$";
-        Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private String getRoleFromMessage(String msg) { //magic regex stuff to get grab the role name from the message. Thanks to Benji for helping me with this
+        String regex = "(?:.*? ){2}(.*)";
+        Pattern p = Pattern.compile(regex);
         Matcher m = p.matcher(msg);
-        return m.group(1);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return null;
     }
 
     public String getRoleIdFromName(String roleName) {

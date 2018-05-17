@@ -95,12 +95,12 @@ public class JsonDatabase {
 
         try (Writer writer = new FileWriter("LinkedEmoji.json")) {
             gson.toJson(json, writer);
-            //System.out.println("writer");
         } catch (java.io.IOException e) {
             e.printStackTrace();
+            closeBR();
             return false;
         }
-        System.out.println("Linked emoji: " + jda.getEmoteById(emojiId).getName() + " with role: " + jda.getRoleById(roleId).getName() );
+        System.out.println("Linked emoji: " + jda.getEmoteById(emojiId) + " with role: " + jda.getRoleById(roleId).getName() );
         closeBR();
         return true;
     }
@@ -117,6 +117,7 @@ public class JsonDatabase {
             gson.toJson(json, writer);
         } catch (java.io.IOException e) {
             e.printStackTrace();
+            closeBR();
             return false;
         }
         System.out.println("Unlinked emoji:" + jda.getEmoteById(emojiId).getName());
