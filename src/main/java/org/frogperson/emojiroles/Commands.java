@@ -41,17 +41,20 @@ public class Commands extends ListenerAdapter {
 
         if (msg.startsWith(prefix)) {
 
-            if (msg.toLowerCase().startsWith("addrolemessage ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) { //add role message command. Syntax: !addrolemessage <messageId>
+            //add role message command. Syntax: !addrolemessage <messageId>
+            if (msg.toLowerCase().startsWith("addrolemessage ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
                 if (JsonDatabase.addRoleMessage(msg.replace(prefix + "addrolemessage ", "")))
                     event.getTextChannel().sendMessage("**Message is now a Role Message.** Please add a random reaction to your new Role Message").queue();
             }
 
-            if (msg.toLowerCase().startsWith("removerolemessage ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) { //remove role message command. Syntax: !removerolemessage <messageId>
+            //remove role message command. Syntax: !removerolemessage <messageId>
+            if (msg.toLowerCase().startsWith("removerolemessage ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
                 if (JsonDatabase.removeRoleMessage(msg.replace(prefix + "removerolemessage ", "")))
                     event.getTextChannel().sendMessage("**Message is no longer a Role Message**").queue();
             }
 
-            if (msg.toLowerCase().startsWith("emojilink ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) { //link command. Syntax: !emojilink :Emoji: Role Name
+            //link command. Syntax: !emojilink :Emoji: Role Name
+            if (msg.toLowerCase().startsWith("emojilink ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
                 if (emojis.size() == 1) {
                     emoji = emojis.get(0).getId();
                     role = getRoleIdFromName(getRoleFromMessage(msg));
@@ -64,7 +67,8 @@ public class Commands extends ListenerAdapter {
                 }
             }
 
-            if (msg.toLowerCase().startsWith("emojiunlink ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) { //unlink command. Syntax: !emojiunlink :Emoji:
+            //unlink command. Syntax: !emojiunlink :Emoji:
+            if (msg.toLowerCase().startsWith("emojiunlink ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
                 if (emojis.size() == 1) {
                     emoji = emojis.get(0).getId();
                     if (JsonDatabase.getLinkedRoleFromEmoji(emojis.get(0).getId()) != null)
@@ -73,7 +77,8 @@ public class Commands extends ListenerAdapter {
                 }
             }
 
-            if (msg.toLowerCase().startsWith("emojireload", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) { //reload settings
+            //reload settings
+            if (msg.toLowerCase().startsWith("emojireload", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
                 event.getTextChannel().sendMessage("**Settings reloaded**").queue();
                 Settings.loadSettings();
             }
