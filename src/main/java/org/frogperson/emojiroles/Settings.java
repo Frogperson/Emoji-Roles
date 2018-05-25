@@ -16,6 +16,9 @@ public class Settings {
     private static String commandPrefix;
     private static String roleAddedEmoji;
     private static String roleRemovedEmoji;
+    private static Boolean refreshReactions;
+    private static Integer refreshTimer;
+    private static String refreshBotToken;
 
     public static void loadSettings() {
 
@@ -40,6 +43,9 @@ public class Settings {
         commandPrefix = config.getString("commandPrefix");
         roleAddedEmoji = config.getString("roleAddedEmoji");
         roleRemovedEmoji = config.getString("roleRemovedEmoji");
+        refreshReactions = config.getBoolean("refreshReactions");
+        refreshTimer = config.getInt("refreshTimer");
+        refreshBotToken = config.getString("refreshBotToken");
 
     }
 
@@ -67,4 +73,11 @@ public class Settings {
     public static String getRoleRemovedEmoji() {
         return roleRemovedEmoji;
     }
+
+    public static Boolean getRefreshReactions() { return refreshReactions; }
+
+    public static Integer getRefreshTimer() { return refreshTimer; }
+
+    public static String getRefreshBotToken() { return refreshBotToken; }
+
 }

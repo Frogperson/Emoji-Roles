@@ -1,14 +1,12 @@
 package org.frogperson.emojiroles;
 
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.Role;
+import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
-import net.dv8tion.jda.core.entities.Emote;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +31,7 @@ public class Commands extends ListenerAdapter {
                 previousMessage.clearReactions().complete(); //clear previous reactions just in case
                 for (Emote previousEmoji : previousEmojis) {
                     if (JsonDatabase.getLinkedRoleFromEmoji(previousEmoji.getId()) != null)
-                    previousMessage.addReaction(previousEmoji).queue();
+                        previousMessage.addReaction(previousEmoji).queue();
                 }
             });
             event.getMessage().delete().queue();
@@ -41,10 +39,38 @@ public class Commands extends ListenerAdapter {
 
         if (msg.startsWith(prefix)) {
 
+
             //add role message command. Syntax: !addrolemessage <messageId>
             if (msg.toLowerCase().startsWith("addrolemessage ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
-                if (JsonDatabase.addRoleMessage(msg.replace(prefix + "addrolemessage ", "")))
-                    event.getTextChannel().sendMessage("**Message is now a Role Message.** Please add a random reaction to your new Role Message").queue();
+                String messageId = msg.replace(prefix + "addrolemessage ", "");
+                if (JsonDatabase.addRoleMessage(messageId)) {
+                    event.getTextChannel().sendMessage("**Message is now a Role Message.**").queue();
+                    List<Emote> linkedMessageEmojis = new ArrayList<>();
+                    List<Emote> reactionEmojis = new ArrayList<>();
+                    for (TextChannel textChannel : jda.getTextChannels()) {
+                        try {
+                            textChannel.getMessageById(messageId).queue((Message message) -> {
+                                for (Emote emote : message.getEmotes()) {
+                                    if (JsonDatabase.getLinkedRoleFromEmoji(emote.getId()) != null)
+                                        linkedMessageEmojis.add(emote);
+                                }
+                                for (MessageReaction reaction : message.getReactions())
+                                    reactionEmojis.add(reaction.getReactionEmote().getEmote());
+                                if (!reactionEmojis.containsAll(linkedMessageEmojis)) {
+                                    message.clearReactions().complete();
+                                    System.out.println(linkedMessageEmojis);
+                                    for (Emote emote : linkedMessageEmojis) {
+                                        textChannel.addReactionById(messageId, emote).queue();
+                                    }
+                                }
+                            });
+                        } catch (NullPointerException e) {
+                            e.printStackTrace();
+                        } catch (InsufficientPermissionException e) {
+                            System.out.println("Insufficient permissions to read channel");
+                        }
+                    }
+                }
             }
 
             //remove role message command. Syntax: !removerolemessage <messageId>
