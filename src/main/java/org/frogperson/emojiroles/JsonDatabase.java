@@ -1,8 +1,14 @@
 package org.frogperson.emojiroles;
 
 import com.google.gson.*;
+import com.vdurmont.emoji.Emoji;
+import com.vdurmont.emoji.EmojiManager;
+import com.vdurmont.emoji.EmojiParser;
+import com.vdurmont.emoji.Fitzpatrick;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import java.io.*;
+import java.util.List;
 
 import static org.frogperson.emojiroles.EmojiRoles.jda;
 
@@ -85,14 +91,25 @@ public class JsonDatabase {
         return true;
     }
 
-    public static boolean addEmojiRole(String emojiId, String roleId) {
+    public static boolean addEmojiRole(String emojiIdOrUnicode, String roleId) {
         loadBR();
         JsonElement emojiRoles = new JsonObject();
+        Emoji unicodeEmoji;
+        String emoji;
+        String emojiName;
+        if (EmojiManager.isEmoji(emojiIdOrUnicode)) {
+            unicodeEmoji = EmojiManager.getByUnicode(emojiIdOrUnicode);
+            emoji = unicodeEmoji.getHtmlDecimal();
+            emojiName = unicodeEmoji.getAliases().get(0);
+        } else {
+            emoji = emojiIdOrUnicode;
+            emojiName = jda.getEmoteById(emojiIdOrUnicode).getName();
+        }
         if (!json.has("emojiRoles")) {
             json.add("emojiRoles", emojiRoles);
         }
-        json.getAsJsonObject("emojiRoles").addProperty(emojiId, roleId);
-
+        json.getAsJsonObject("emojiRoles").addProperty(emoji, roleId);
+        System.out.println("here I am!");
         try (Writer writer = new FileWriter("LinkedEmoji.json")) {
             gson.toJson(json, writer);
         } catch (java.io.IOException e) {
@@ -100,19 +117,30 @@ public class JsonDatabase {
             closeBR();
             return false;
         }
-        System.out.println("Linked emoji: " + jda.getEmoteById(emojiId) + " with role: " + jda.getRoleById(roleId).getName() );
+        System.out.println("Linked emoji: " + emojiName + " with role: " + jda.getRoleById(roleId).getName() );
         closeBR();
         return true;
     }
 
-    public static boolean removeEmojiRole(String emojiId) {
+    public static boolean removeEmojiRole(String emojiIdOrUnicode) {
         loadBR();
+        Emoji unicodeEmoji;
+        String emoji;
+        String emojiName;
+        if (EmojiManager.isEmoji(emojiIdOrUnicode)) {
+            unicodeEmoji = EmojiManager.getByUnicode(emojiIdOrUnicode);
+            emoji = unicodeEmoji.getHtmlDecimal();
+            emojiName = unicodeEmoji.getAliases().get(0);
+        } else {
+            emoji = emojiIdOrUnicode;
+            emojiName = jda.getEmoteById(emojiIdOrUnicode).getName();
+        }
         if (!json.has("emojiRoles")) {
             System.out.println("RemoveEmojiRole Error: Emoji was not previously linked");
             closeBR();
             return false;
         }
-        json.getAsJsonObject("emojiRoles").remove(emojiId);
+        json.getAsJsonObject("emojiRoles").remove(emoji);
         try (Writer writer = new FileWriter("LinkedEmoji.json")) {
             gson.toJson(json, writer);
         } catch (java.io.IOException e) {
@@ -120,7 +148,7 @@ public class JsonDatabase {
             closeBR();
             return false;
         }
-        System.out.println("Unlinked emoji:" + jda.getEmoteById(emojiId).getName());
+        System.out.println("Unlinked emoji:" + emojiName);
         closeBR();
         return true;
     }
@@ -134,11 +162,18 @@ public class JsonDatabase {
         return isMessageRoleMessage;
     }
 
-    public static String getLinkedRoleFromEmoji(String emojiId) {
+    public static String getLinkedRoleFromEmoji(String emojiIdOrUnicode) {
         loadBR();
-        if (json.has("emojiRoles")) {
+        Emoji unicodeEmoji;
+        String emoji;
+        if (EmojiManager.isEmoji(emojiIdOrUnicode)) {
+            unicodeEmoji = EmojiManager.getByUnicode(emojiIdOrUnicode);
+            emoji = unicodeEmoji.getHtmlDecimal();
+        } else {
+            emoji = emojiIdOrUnicode;
+        }        if (json.has("emojiRoles")) {
             try {
-                String role = json.getAsJsonObject("emojiRoles").get(emojiId).getAsString();
+                String role = json.getAsJsonObject("emojiRoles").get(emoji).getAsString();
                 closeBR();
                 return role;
             } catch (NullPointerException n) {

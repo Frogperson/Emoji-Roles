@@ -1,15 +1,13 @@
 package org.frogperson.emojiroles;
 
+import com.vdurmont.emoji.EmojiManager;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageReaction;
 import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 import static org.frogperson.emojiroles.EmojiRoles.jda;
 import static org.frogperson.emojiroles.EmojiRoles.jda1;
@@ -34,10 +32,17 @@ public class RefreshBotReactionListener extends ListenerAdapter {
                 @Override
                 public void run() {
                     event.getChannel().getMessageById(event.getMessageId()).queue((Message message) -> {
-                        for (Emote emote : message.getEmotes()) {
-                            if (JsonDatabase.getLinkedRoleFromEmoji(emote.getId()) != null) {
-                                event.getChannel().addReactionById(event.getMessageId(), emote).complete();
-                                event.getChannel().removeReactionById(event.getMessageId(), emote).queue();
+
+                        String[] messageRaw = message.getContentRaw().split("\\s+");
+                        List<String> messageContents = Arrays.asList(messageRaw);
+                        for (String word : messageContents) {
+                            if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null) {
+                                event.getChannel().addReactionById(event.getMessageId(), word).complete();
+                                event.getChannel().removeReactionById(event.getMessageId(), word).queue();
+                            }
+                            else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null) {
+                                event.getChannel().addReactionById(event.getMessageId(), jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).complete();
+                                event.getChannel().removeReactionById(event.getMessageId(), jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).queue();
                             }
                         }
                     });

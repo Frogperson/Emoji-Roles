@@ -1,5 +1,7 @@
 package org.frogperson.emojiroles;
 
+import com.vdurmont.emoji.Emoji;
+import com.vdurmont.emoji.EmojiParser;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
@@ -20,6 +22,7 @@ public class Commands extends ListenerAdapter {
         String prefix = Settings.getCommandPrefix();
         String msg = event.getMessage().getContentDisplay();
         List<Emote> emojis = event.getMessage().getEmotes();
+        List<String> unicodeEmojis = EmojiParser.extractEmojis(event.getMessage().getContentRaw());
         String emoji;
         String role;
 
@@ -81,15 +84,20 @@ public class Commands extends ListenerAdapter {
 
             //link command. Syntax: !emojilink :Emoji: Role Name
             if (msg.toLowerCase().startsWith("emojilink ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
-                if (emojis.size() == 1) {
-                    emoji = emojis.get(0).getId();
+                System.out.println(event.getMessage().getContentRaw());
+                if (emojis.size() == 1 || unicodeEmojis.size() == 1) {
+                    emoji = emojis.size() == 1 ? emojis.get(0).getId() : unicodeEmojis.get(0);
+                    //emoji = emojis.get(0).getId();
+                    System.out.println(emoji);
                     role = getRoleIdFromName(getRoleFromMessage(msg));
-                    if (role != null && jda.getEmoteById(emoji) != null) {
+                    if (role != null && unicodeEmojis.size() == 1 || jda.getEmoteById(emoji) != null) {
                         if (JsonDatabase.addEmojiRole(emoji, role))
                             event.getTextChannel().sendMessage("**Linked sucessfully**").queue();
-                    } else {
-                        event.getTextChannel().sendMessage("**Please use an emoji uploaded to this server**").queue();
                     }
+                    else if (role == null)
+                        event.getTextChannel().sendMessage("**Role not found. Please make sure you spelled it correctly.**").queue();
+                    else
+                        event.getTextChannel().sendMessage("**Please use an emoji uploaded to this server or a default discord emoji**").queue();
                 }
             }
 

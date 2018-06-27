@@ -1,5 +1,6 @@
 package org.frogperson.emojiroles;
 
+import com.vdurmont.emoji.EmojiManager;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageReaction;
@@ -34,15 +35,19 @@ public class ReactionListener extends ListenerAdapter {
             event.getReaction().removeReaction(event.getUser()).complete();
 
             event.getChannel().getMessageById(event.getMessageId()).queue((Message message) -> {
-                List<Emote> emojiList = new ArrayList<>();
-                for (Emote emoji : message.getEmotes()) {
-                    if (JsonDatabase.getLinkedRoleFromEmoji(emoji.getId()) != null)
-                        emojiList.add(emoji);
+                List<Object> emojiList = new ArrayList<>();
+
+                String[] messageRaw = message.getContentRaw().split("\\s+");
+                List<String> messageContents = Arrays.asList(messageRaw);
+                for (String word : messageContents) {
+                    if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null)
+                        emojiList.add(word);
+                    else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null)
+                        emojiList.add(jda.getEmoteById(word.replaceAll("[^0-9.]", "")));
                 }
 
                 //Only do things if the reacted emoji is in the Role Message
-                if (emojiList.contains(event.getReaction().getReactionEmote().getEmote())) {
-                    System.out.println("test");
+                if (emojiList.contains(event.getReaction().getReactionEmote().getEmote()) || emojiList.contains(event.getReaction().getReactionEmote().getName())) {
                     if (!refreshBotActive) { //Don't do this if we have another bot reacting
                         timer.cancel();
                         timer = new Timer();
@@ -51,8 +56,13 @@ public class ReactionListener extends ListenerAdapter {
                             public void run() {
                                 event.getChannel().getMessageById(event.getMessageId()).queue((Message message) -> {
                                     message.clearReactions().complete();
-                                    for (Emote emoji : emojiList) {
-                                        event.getChannel().addReactionById(event.getMessageId(), emoji).queue();
+                                    String[] messageRaw = message.getContentRaw().split("\\s+");
+                                    List<String> messageContents = Arrays.asList(messageRaw);
+                                    for (String word : messageContents) {
+                                        if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null)
+                                            message.addReaction(word).complete();
+                                        else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null)
+                                            message.addReaction(jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).complete();
                                     }
                                 });
                             }
@@ -60,7 +70,8 @@ public class ReactionListener extends ListenerAdapter {
                     }
 
                     try {
-                        String roleId = JsonDatabase.getLinkedRoleFromEmoji(event.getReactionEmote().getId());
+                        String emojiIdOrUnicode = EmojiManager.isEmoji(event.getReactionEmote().getName()) ? event.getReactionEmote().getName() : event.getReactionEmote().getId();
+                        String roleId = JsonDatabase.getLinkedRoleFromEmoji(emojiIdOrUnicode);
                         String roleName = jda.getRoleById(roleId).getName();
                         Role role = jda.getRoleById(roleId);
 
