@@ -1,6 +1,7 @@
 package org.frogperson.emojiroles;
 
 import com.vdurmont.emoji.Emoji;
+import com.vdurmont.emoji.EmojiManager;
 import com.vdurmont.emoji.EmojiParser;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -8,6 +9,7 @@ import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,11 +32,16 @@ public class Commands extends ListenerAdapter {
             event.getChannel().getHistoryBefore(event.getMessage(), 1).queue(messageHistory -> {
                 Message previousMessage = messageHistory.getRetrievedHistory().get(0);
                 JsonDatabase.addRoleMessage(previousMessage.getId());
-                List<Emote> previousEmojis = previousMessage.getEmotes();
                 previousMessage.clearReactions().complete(); //clear previous reactions just in case
-                for (Emote previousEmoji : previousEmojis) {
-                    if (JsonDatabase.getLinkedRoleFromEmoji(previousEmoji.getId()) != null)
-                        previousMessage.addReaction(previousEmoji).queue();
+
+                String[] message = previousMessage.getContentRaw().split("\\s+");
+                List<String> messageContents = Arrays.asList(message);
+
+                for (String word : messageContents) {
+                    if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null)
+                        previousMessage.addReaction(word).complete();
+                    else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null)
+                        previousMessage.addReaction(jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).complete();
                 }
             });
             event.getMessage().delete().queue();
@@ -42,35 +49,30 @@ public class Commands extends ListenerAdapter {
 
         if (msg.startsWith(prefix)) {
 
-
             //add role message command. Syntax: !addrolemessage <messageId>
             if (msg.toLowerCase().startsWith("addrolemessage ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
                 String messageId = msg.replace(prefix + "addrolemessage ", "");
                 if (JsonDatabase.addRoleMessage(messageId)) {
                     event.getTextChannel().sendMessage("**Message is now a Role Message.**").queue();
-                    List<Emote> linkedMessageEmojis = new ArrayList<>();
-                    List<Emote> reactionEmojis = new ArrayList<>();
                     for (TextChannel textChannel : jda.getTextChannels()) {
                         try {
                             textChannel.getMessageById(messageId).queue((Message message) -> {
-                                for (Emote emote : message.getEmotes()) {
-                                    if (JsonDatabase.getLinkedRoleFromEmoji(emote.getId()) != null)
-                                        linkedMessageEmojis.add(emote);
-                                }
-                                for (MessageReaction reaction : message.getReactions())
-                                    reactionEmojis.add(reaction.getReactionEmote().getEmote());
-                                if (!reactionEmojis.containsAll(linkedMessageEmojis)) {
-                                    message.clearReactions().complete();
-                                    System.out.println(linkedMessageEmojis);
-                                    for (Emote emote : linkedMessageEmojis) {
-                                        textChannel.addReactionById(messageId, emote).queue();
+                                message.clearReactions().complete();
+                                String[] messageRaw = message.getContentRaw().split("\\s+");
+                                List<String> messageContents = Arrays.asList(messageRaw);
+                                for (String word : messageContents) {
+                                    if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null) {
+                                        message.getTextChannel().addReactionById(message.getId(), word).complete();
+                                    }
+                                    else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null) {
+                                        message.getTextChannel().addReactionById(message.getId(), jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).complete();
                                     }
                                 }
                             });
                         } catch (NullPointerException e) {
                             e.printStackTrace();
                         } catch (InsufficientPermissionException e) {
-                            System.out.println("Insufficient permissions to read channel");
+                            System.out.println("Insufficient permissions to read a channel");
                         }
                     }
                 }
@@ -84,20 +86,15 @@ public class Commands extends ListenerAdapter {
 
             //link command. Syntax: !emojilink :Emoji: Role Name
             if (msg.toLowerCase().startsWith("emojilink ", prefix.length()) && doesMemberHaveRole(event.getMember(), Settings.getAdminRole())) {
-                System.out.println(event.getMessage().getContentRaw());
                 if (emojis.size() == 1 || unicodeEmojis.size() == 1) {
                     emoji = emojis.size() == 1 ? emojis.get(0).getId() : unicodeEmojis.get(0);
-                    //emoji = emojis.get(0).getId();
-                    System.out.println(emoji);
                     role = getRoleIdFromName(getRoleFromMessage(msg));
-                    if (role != null && unicodeEmojis.size() == 1 || jda.getEmoteById(emoji) != null) {
+                    if (role == null)
+                        event.getTextChannel().sendMessage("**Role not found. Please make sure you spelled it correctly.**").queue();
+                    else if (unicodeEmojis.size() == 1 || jda.getEmoteById(emoji) != null) {
                         if (JsonDatabase.addEmojiRole(emoji, role))
                             event.getTextChannel().sendMessage("**Linked sucessfully**").queue();
-                    }
-                    else if (role == null)
-                        event.getTextChannel().sendMessage("**Role not found. Please make sure you spelled it correctly.**").queue();
-                    else
-                        event.getTextChannel().sendMessage("**Please use an emoji uploaded to this server or a default discord emoji**").queue();
+                    } else event.getTextChannel().sendMessage("**Please use either an emoji uploaded to this server or a default discord emoji**").queue();
                 }
             }
 

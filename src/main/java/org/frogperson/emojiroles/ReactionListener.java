@@ -59,16 +59,17 @@ public class ReactionListener extends ListenerAdapter {
                                     String[] messageRaw = message.getContentRaw().split("\\s+");
                                     List<String> messageContents = Arrays.asList(messageRaw);
                                     for (String word : messageContents) {
-                                        if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null)
-                                            message.addReaction(word).complete();
-                                        else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null)
-                                            message.addReaction(jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).complete();
+                                        if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null) {
+                                            message.getTextChannel().addReactionById(message.getId(), word).queue();
+                                        }
+                                        else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null) {
+                                            message.getTextChannel().addReactionById(message.getId(), jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).queue();
+                                        }
                                     }
                                 });
                             }
                         }, delay * 1000);
                     }
-
                     try {
                         String emojiIdOrUnicode = EmojiManager.isEmoji(event.getReactionEmote().getName()) ? event.getReactionEmote().getName() : event.getReactionEmote().getId();
                         String roleId = JsonDatabase.getLinkedRoleFromEmoji(emojiIdOrUnicode);
