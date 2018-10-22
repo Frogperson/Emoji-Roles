@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.frogperson.emojiroles.EmojiRoles.jda;
 
-public class EditMessageListener extends ListenerAdapter{
+public class EditMessageListener extends ListenerAdapter {
 
     @Override
     public void onMessageUpdate(MessageUpdateEvent event) {

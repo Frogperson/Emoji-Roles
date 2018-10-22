@@ -117,7 +117,7 @@ public class JsonDatabase {
             closeBR();
             return false;
         }
-        System.out.println("Linked emoji: " + emojiName + " with role: " + jda.getRoleById(roleId).getName() );
+        System.out.println("Linked emoji: " + emojiName + " with role: " + jda.getRoleById(roleId).getName());
         closeBR();
         return true;
     }
@@ -171,7 +171,8 @@ public class JsonDatabase {
             emoji = unicodeEmoji.getHtmlDecimal();
         } else {
             emoji = emojiIdOrUnicode;
-        }        if (json.has("emojiRoles")) {
+        }
+        if (json.has("emojiRoles")) {
             try {
                 String role = json.getAsJsonObject("emojiRoles").get(emoji).getAsString();
                 closeBR();
@@ -185,4 +186,3 @@ public class JsonDatabase {
         return null;
     }
 }
-

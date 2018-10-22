@@ -27,6 +27,7 @@ public class ReactionListener extends ListenerAdapter {
         boolean isRefreshBotReaction = false;
         boolean force = true;
 
+
         if (refreshBotActive)
             isRefreshBotReaction = event.getMember().getUser().getId().equals(jda1.getSelfUser().getId());
 
@@ -55,17 +56,17 @@ public class ReactionListener extends ListenerAdapter {
                             @Override
                             public void run() {
                                 event.getChannel().getMessageById(event.getMessageId()).queue((Message message) -> {
-                                    message.clearReactions().complete();
-                                    String[] messageRaw = message.getContentRaw().split("\\s+");
-                                    List<String> messageContents = Arrays.asList(messageRaw);
-                                    for (String word : messageContents) {
-                                        if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null) {
-                                            message.getTextChannel().addReactionById(message.getId(), word).queue();
+                                    message.clearReactions().queue((response) -> {
+                                        String[] messageRaw = message.getContentRaw().split("\\s+");
+                                        List<String> messageContents = Arrays.asList(messageRaw);
+                                        for (String word : messageContents) {
+                                            if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null) {
+                                                message.getTextChannel().addReactionById(message.getId(), word).queue();
+                                            } else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null) {
+                                                message.getTextChannel().addReactionById(message.getId(), jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).queue();
+                                            }
                                         }
-                                        else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null) {
-                                            message.getTextChannel().addReactionById(message.getId(), jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).queue();
-                                        }
-                                    }
+                                    });
                                 });
                             }
                         }, delay * 1000);
@@ -81,8 +82,9 @@ public class ReactionListener extends ListenerAdapter {
                             guildController.addSingleRoleToMember(event.getMember(), role).queue();
                             System.out.println("Gave " + role.getName() + " to " + event.getMember().getUser().getName());
                             if (!Settings.getRoleAddedEmoji().equals("")) {
-                                event.getChannel().addReactionById(event.getMessageId(), jda.getEmoteById(Settings.getRoleAddedEmoji())).complete();
-                                event.getChannel().removeReactionById(event.getMessageId(), jda.getEmoteById(Settings.getRoleAddedEmoji())).queueAfter(3, TimeUnit.SECONDS);
+                                event.getChannel().addReactionById(event.getMessageId(), jda.getEmoteById(Settings.getRoleAddedEmoji())).queue((response) ->
+                                        event.getChannel().removeReactionById(event.getMessageId(), jda.getEmoteById(Settings.getRoleAddedEmoji())).queueAfter(3, TimeUnit.SECONDS)
+                                );
                             }
                         }
                         //Remove the role from the member
@@ -90,8 +92,9 @@ public class ReactionListener extends ListenerAdapter {
                             guildController.removeSingleRoleFromMember(event.getMember(), role).queue();
                             System.out.println("Removed " + role.getName() + " from " + event.getMember().getUser().getName());
                             if (!Settings.getRoleRemovedEmoji().equals("")) {
-                                event.getChannel().addReactionById(event.getMessageId(), jda.getEmoteById(Settings.getRoleRemovedEmoji())).complete();
-                                event.getChannel().removeReactionById(event.getMessageId(), jda.getEmoteById(Settings.getRoleRemovedEmoji())).queueAfter(3, TimeUnit.SECONDS);
+                                event.getChannel().addReactionById(event.getMessageId(), jda.getEmoteById(Settings.getRoleRemovedEmoji())).queue((response) ->
+                                        event.getChannel().removeReactionById(event.getMessageId(), jda.getEmoteById(Settings.getRoleRemovedEmoji())).queueAfter(3, TimeUnit.SECONDS)
+                                );
                             }
                         }
                     } catch (IllegalArgumentException e) {

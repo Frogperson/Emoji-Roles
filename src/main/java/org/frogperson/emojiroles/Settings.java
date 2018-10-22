@@ -74,10 +74,16 @@ public class Settings {
         return roleRemovedEmoji;
     }
 
-    public static Boolean getRefreshReactions() { return refreshReactions; }
+    public static Boolean getRefreshReactions() {
+        return refreshReactions;
+    }
 
-    public static Integer getRefreshTimer() { return refreshTimer; }
+    public static Integer getRefreshTimer() {
+        return refreshTimer;
+    }
 
-    public static String getRefreshBotToken() { return refreshBotToken; }
+    public static String getRefreshBotToken() {
+        return refreshBotToken;
+    }
 
 }

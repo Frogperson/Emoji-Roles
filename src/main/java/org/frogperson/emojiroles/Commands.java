@@ -32,17 +32,18 @@ public class Commands extends ListenerAdapter {
             event.getChannel().getHistoryBefore(event.getMessage(), 1).queue(messageHistory -> {
                 Message previousMessage = messageHistory.getRetrievedHistory().get(0);
                 JsonDatabase.addRoleMessage(previousMessage.getId());
-                previousMessage.clearReactions().complete(); //clear previous reactions just in case
+                previousMessage.clearReactions().queue((response) -> { //clear previous reactions just in case
 
-                String[] message = previousMessage.getContentRaw().split("\\s+");
-                List<String> messageContents = Arrays.asList(message);
+                    String[] message = previousMessage.getContentRaw().split("\\s+");
+                    List<String> messageContents = Arrays.asList(message);
 
-                for (String word : messageContents) {
-                    if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null)
-                        previousMessage.addReaction(word).complete();
-                    else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null)
-                        previousMessage.addReaction(jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).complete();
-                }
+                    for (String word : messageContents) {
+                        if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null)
+                            previousMessage.addReaction(word).queue();
+                        else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null)
+                            previousMessage.addReaction(jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).queue();
+                    }
+                });
             });
             event.getMessage().delete().queue();
         }
@@ -57,17 +58,17 @@ public class Commands extends ListenerAdapter {
                     for (TextChannel textChannel : jda.getTextChannels()) {
                         try {
                             textChannel.getMessageById(messageId).queue((Message message) -> {
-                                message.clearReactions().complete();
-                                String[] messageRaw = message.getContentRaw().split("\\s+");
-                                List<String> messageContents = Arrays.asList(messageRaw);
-                                for (String word : messageContents) {
-                                    if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null) {
-                                        message.getTextChannel().addReactionById(message.getId(), word).complete();
+                                message.clearReactions().queue((response) -> {
+                                    String[] messageRaw = message.getContentRaw().split("\\s+");
+                                    List<String> messageContents = Arrays.asList(messageRaw);
+                                    for (String word : messageContents) {
+                                        if (EmojiManager.isEmoji(word) && JsonDatabase.getLinkedRoleFromEmoji(word) != null) {
+                                            message.getTextChannel().addReactionById(message.getId(), word).queue();
+                                        } else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null) {
+                                            message.getTextChannel().addReactionById(message.getId(), jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).queue();
+                                        }
                                     }
-                                    else if (JsonDatabase.getLinkedRoleFromEmoji(word.replaceAll("[^0-9.]", "")) != null) {
-                                        message.getTextChannel().addReactionById(message.getId(), jda.getEmoteById(word.replaceAll("[^0-9.]", ""))).complete();
-                                    }
-                                }
+                                });
                             });
                         } catch (NullPointerException e) {
                             e.printStackTrace();
@@ -94,7 +95,8 @@ public class Commands extends ListenerAdapter {
                     else if (unicodeEmojis.size() == 1 || jda.getEmoteById(emoji) != null) {
                         if (JsonDatabase.addEmojiRole(emoji, role))
                             event.getTextChannel().sendMessage("**Linked sucessfully**").queue();
-                    } else event.getTextChannel().sendMessage("**Please use either an emoji uploaded to this server or a default discord emoji**").queue();
+                    } else
+                        event.getTextChannel().sendMessage("**Please use either an emoji uploaded to this server or a default discord emoji**").queue();
                 }
             }
 
@@ -138,4 +140,3 @@ public class Commands extends ListenerAdapter {
         return false;
     }
 }
-

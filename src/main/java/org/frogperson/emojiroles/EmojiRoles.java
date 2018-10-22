@@ -64,5 +64,4 @@ public class EmojiRoles {
             e.printStackTrace();
         }
     }
-
 }
